@@ -3,6 +3,7 @@
 	"id": "io.github.thepeterkovacs.thermals",
 	"name": "Thermals",
 	"version": "1.0.0",
+	"author": "thepeterkovacs",
 	"license": "MIT",
 	"description": "Shows CPU and GPU temperatures on the Omarchy bar, with a detailed thermal panel on click. Reads lm_sensors (AMD, Intel, and other sensors).",
 	"kinds": ["bar-widget"],
