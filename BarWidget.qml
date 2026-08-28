@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import qs.Commons
 import qs.Ui
 
 BarWidget {
@@ -55,6 +56,11 @@ BarWidget {
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
+
+  // Widen the open-panel underline to span both temperature values, rather
+  // than the bar's default 55%-of-slot mark which is too short for our label.
+  readonly property real openPanelIndicatorWidth:
+    (button.labelWidth > 0 ? button.labelWidth : button.implicitWidth) + Style.space(4)
 
   onBarChanged: injectPanel()
 
@@ -168,15 +174,16 @@ BarWidget {
       }
 
       // ------------------------------------------------ everything else
-      // NVMe drives, motherboard, RAM, chipset, NIC — surface them all in
-      // the panel under a friendly group so nothing useful is thrown away.
+      // NVMe drives, motherboard, RAM, chipset — surface them all in the
+      // panel under a friendly group so nothing useful is thrown away.
+      // (Network-adapter sensors are dropped; they add noise, not signal.)
       else {
         var group = "Other"
         if (chip.indexOf("nvme") === 0) group = "Storage"
         else if (chip.indexOf("drivetemp") === 0) group = "Storage"
         else if (chip.indexOf("spd5118") === 0 || chip.indexOf("jc42") === 0) group = "Memory"
         else if (chip.indexOf("mt7921") === 0 || chip.indexOf("iwlwifi") === 0
-                 || chip.indexOf("r8169") === 0) group = "Network"
+                 || chip.indexOf("r8169") === 0) continue  // network sensors are noise
         else if (chip.indexOf("nct") === 0 || chip.indexOf("it87") === 0) group = "Motherboard"
 
         for (var ok in block) {

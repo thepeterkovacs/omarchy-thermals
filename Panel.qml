@@ -29,7 +29,7 @@ Panel {
   function groupedRows() {
     var rows = (root.hostWidget && root.hostWidget.detailRows)
       ? root.hostWidget.detailRows : []
-    var order = ["CPU", "GPU", "Storage", "Memory", "Motherboard", "Network", "Other"]
+    var order = ["CPU", "GPU", "Storage", "Memory", "Motherboard", "Other"]
     var byGroup = {}
     for (var i = 0; i < rows.length; i++) {
       var g = rows[i].group
@@ -72,7 +72,7 @@ Panel {
         // ---- Title ----
         Text {
           width: parent.width
-          text: "Temperatures"
+          text: "Thermals"
           color: root.barForeground
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.subtitle
@@ -80,7 +80,7 @@ Panel {
         }
 
         // ---------------------------------------------------------- CPU
-        SectionHeader { title: "CPU"; sub: root.hostWidget ? root.hostWidget.cpuChip : "" }
+        SectionHeader { title: "CPU" }
 
         TempRow {
           label: "Package"
@@ -105,7 +105,7 @@ Panel {
         Divider {}
 
         // ---------------------------------------------------------- GPU
-        SectionHeader { title: "GPU"; sub: root.hostWidget ? root.hostWidget.gpuChip : "" }
+        SectionHeader { title: "GPU" }
 
         Repeater {
           model: [
@@ -150,22 +150,12 @@ Panel {
   // ------------------------------------------------------------ components
   component SectionHeader : Row {
     property string title: ""
-    property string sub: ""
     width: content.width
     spacing: Style.space(6)
     Text {
       text: parent.title
       color: root.barForeground
       opacity: 0.7
-      font.family: root.bar ? root.bar.fontFamily : Style.font.family
-      font.pixelSize: Style.font.caption
-    }
-    Text {
-      text: parent.sub
-      color: root.barForeground
-      opacity: 0.35
-      elide: Text.ElideRight
-      width: Math.max(0, parent.width - Style.space(60))
       font.family: root.bar ? root.bar.fontFamily : Style.font.family
       font.pixelSize: Style.font.caption
     }
