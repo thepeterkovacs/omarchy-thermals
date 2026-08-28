@@ -1,0 +1,16 @@
+{
+	"schemaVersion": 1,
+	"id": "io.github.thepeterkovacs.thermals",
+	"name": "Thermals",
+	"version": "1.0.0",
+	"license": "MIT",
+	"description": "Shows CPU and GPU temperatures on the Omarchy bar, with a detailed thermal panel on click. Reads lm_sensors (AMD, Intel, and other sensors).",
+	"kinds": ["bar-widget"],
+	"entryPoints": { "barWidget": "BarWidget.qml" },
+	"barWidget": {
+		"displayName": "Thermals",
+		"category": "System",
+		"allowMultiple": false,
+		"defaultSection": "right"
+	}
+}
