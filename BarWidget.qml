@@ -32,6 +32,17 @@ BarWidget {
   readonly property int cpuHot: 90
   readonly property int gpuHot: 95
 
+  // Hard limits so a malformed or unexpectedly large `sensors -j` output can
+  // never exhaust this long-lived shell process. Typical output is a few KB,
+  // so these leave ample headroom for many-sensor machines while bounding the
+  // worst case. Bytes and time are capped at the OS level (see sensorsProc)
+  // before the collector retains anything; maxRows/maxLabelLen bound only the
+  // detail-panel model, never the CPU/GPU headline detection.
+  readonly property int maxBytes: 262144    // 256 KiB producer byte cap
+  readonly property int procTimeout: 5      // seconds; hard process deadline
+  readonly property int maxRows: 256        // detail rows to keep
+  readonly property int maxLabelLen: 64     // per-row label length
+
   // ---------------------------------------------------------- panel wiring
   readonly property bool opened: panelLoader.item
     ? panelLoader.item.opened === true
@@ -109,19 +120,37 @@ BarWidget {
         || chip.indexOf("intel") === 0 && chip.indexOf("gpu") >= 0
   }
 
+  // Clamp a label to a sane length so a pathological chip/channel name can't
+  // bloat the model or the panel layout.
+  function clampLabel(s) {
+    s = String(s)
+    return s.length > root.maxLabelLen ? s.substring(0, root.maxLabelLen) : s
+  }
+
   function parseSensors(jsonText) {
+    // `jsonText` is already bounded to `maxBytes` by the OS-level `head -c`
+    // in sensorsProc, so JSON.parse can never see an unbounded string.
     var data
     try {
       data = JSON.parse(jsonText)
     } catch (e) {
+      // Keep the last-good readings rather than blanking the bar. This is the
+      // fail-safe path for a truncated/garbled producer; with ~100x headroom
+      // over typical output it should only ever fire under abuse.
       return
     }
+    if (!data || typeof data !== "object") return
 
     var cpu = -1, cpuName = ""
     var gEdge = -1, gJunc = -1, gMem = -1, gpuName = ""
     var gpuScore = -1
     var rows = []
 
+    // The total chip count is already bounded by `maxBytes` (JSON.parse only
+    // sees a capped string), so we scan every chip for the CPU/GPU headline —
+    // never skipping one, since its key order in `sensors -j` is not
+    // guaranteed. Only `rows` (the detail-panel model) grows per channel, so
+    // that is where the item cap lives, below.
     for (var chip in data) {
       var block = data[chip]
       if (!block || typeof block !== "object") continue
@@ -144,10 +173,11 @@ BarWidget {
 
         // Per-core / CCD detail rows.
         for (var cc in block) {
+          if (rows.length >= root.maxRows) break
           if (cc === "Adapter") continue
           var ct = firstInput(block[cc])
           if (ct >= 0)
-            rows.push({ group: "CPU", label: cc, temp: ct, crit: critOf(block[cc]) })
+            rows.push({ group: "CPU", label: clampLabel(cc), temp: ct, crit: critOf(block[cc]) })
         }
       }
 
@@ -187,10 +217,11 @@ BarWidget {
         else if (chip.indexOf("nct") === 0 || chip.indexOf("it87") === 0) group = "Motherboard"
 
         for (var ok in block) {
+          if (rows.length >= root.maxRows) break
           if (ok === "Adapter") continue
           var ov = firstInput(block[ok])
           if (ov >= 0)
-            rows.push({ group: group, label: shortChip(chip) + " · " + ok,
+            rows.push({ group: group, label: clampLabel(shortChip(chip) + " · " + ok),
                         temp: ov, crit: critOf(block[ok]) })
         }
       }
@@ -214,7 +245,13 @@ BarWidget {
 
   Process {
     id: sensorsProc
-    command: ["sensors", "-j"]
+    // Bound the producer at the OS level *before* QML collects anything:
+    //   timeout -k 1 N ...  — hard deadline; kills a hung `sensors` process
+    //   head -c BYTES       — caps stdout bytes (SIGPIPEs sensors once full)
+    // so the StdioCollector below can never retain more than `maxBytes`.
+    command: ["sh", "-c",
+      "timeout -k 1 " + root.procTimeout
+        + " sensors -j | head -c " + root.maxBytes]
     stdout: StdioCollector {
       waitForEnd: true
       onStreamFinished: root.parseSensors(text)
