@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1]
+
+### Fixed
+
+- Bounded `sensors -j` output so a malformed or unusually large run can no
+  longer accumulate in the long-lived shell process: the command now runs
+  under a 5-second timeout and its output is capped at 256 KiB.
+- Capped the number of detail rows (256) and label length (64 characters)
+  parsed from sensor output, without ever blocking CPU/GPU headline detection.
+- Kept the last-good readings when parsing fails instead of blanking the bar.
+
 ## [1.1.0]
 
 ### Changed
