@@ -19,8 +19,6 @@ The widget sits on the bar; clicking it opens the full thermal panel.
 
 ![Thermals on the Omarchy bar with the panel open](screenshots/desktop.png)
 
-![The thermal panel, showing every sensor the machine reports](screenshots/panel.png)
-
 ## Requirements
 
 - Omarchy (Quickshell-based shell)
